@@ -1,0 +1,39 @@
+name: vale-checks
+on:
+  pull_request:
+    paths:
+      - "source/**"
+
+jobs:
+  vale:
+    name: TDBX Vale rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@master
+
+      - id: files
+        uses: masesgroup/retrieve-changed-files@v2
+        with:
+          format: 'csv'
+
+      - name: checkout-latest-rules
+        uses: actions/checkout@master
+        with:
+          repository: ccho-mongodb/test-vale-gh-action-too
+          path: './tdbx-vale-rules'
+          token: ${{secrets.GITHUB_TOKEN}}
+
+      - name: move-latest-rules
+        run: |
+            cp ./tdbx-vale-rules/.vale.ini .
+            mkdir -p .github/styles/
+            cp -r ./tdbx-vale-rules/.github/styles/MongoDB .github/styles/
+
+      - name: tdbx-vale
+        uses: errata-ai/vale-action@reviewdog
+        with:
+          reporter: github-pr-check
+          files: ${{steps.files.outputs.added_modified}}
+          fail_on_error: true
+          token: ${{secrets.GITHUB_TOKEN}}
